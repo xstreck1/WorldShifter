@@ -2,15 +2,15 @@
 using System.Collections;
 
 public class CameraFollow : MonoBehaviour {
-	Transform player_pos;
+	GameObject player;
 
 	// Use this for initialization
 	void Start () {
-		player_pos = GameObject.FindGameObjectWithTag("Player").transform;
+		player = GameObject.Find("character");
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		transform.position = new Vector3(player_pos.position.x, transform.position.y, transform.position.z);
+		transform.position = new Vector3(player.transform.position.x, transform.position.y, transform.position.z);
 	}
 }
