@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class movement : MonoBehaviour {
+public class Movement : MonoBehaviour {
 	protected float max_speed = 3f;
 	protected float move_force = 1f;
 	protected float jump_force = 150f;
@@ -27,7 +27,8 @@ public class movement : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		}
+		transform.rotation = Quaternion.identity;
+	}
 
 	void FixedUpdate() {
 		// If the player is changing direction (h has a different sign to velocity.x) or hasn't reached maxSpeed yet...
@@ -46,11 +47,8 @@ public class movement : MonoBehaviour {
 		animator.SetBool("Jump", false);
 		animator.SetBool("Switch", false);
 		if (Input.GetButtonDown("Jump")) {
-			if (grounded) {
-				rigidbody2D.AddForce(new Vector2(0f, jump_force));
-				animator.SetBool("Jump", true);
-			} else 
-				animator.SetBool("Switch", true);
+			rigidbody2D.AddForce(new Vector2(0f, jump_force));
+			animator.SetBool("Jump", true);
 		}
 
 		/*if (Input.GetButton("Jump")) {
