@@ -21,6 +21,7 @@ public class Movement : MonoBehaviour {
 	protected static readonly float MIN_DISPLAY_TIME = 0.5f;
 	protected float display_timer = 0f;
 	protected TextMesh text;
+	protected SpriteRenderer text_back;
 	
 	// Sprite data
 	protected Animator animator;	
@@ -29,7 +30,7 @@ public class Movement : MonoBehaviour {
 	protected bool suspended = false;
 	protected Vector3 last_position; // Where the player got suspended
 	protected Vector2 last_velocity; // Which velocity the player had
-	protected World current_world; // In which world the character currently is
+	protected World current_world = World.Actual; // In which world the character currently is
 	protected float respawn_x = 0f; // Where will the player respawn
 	protected bool crashed = false;
 	protected bool jump_enabled = false; // Not allowed on the start and after the end
@@ -41,18 +42,23 @@ public class Movement : MonoBehaviour {
 
 	void Awake()
 	{
+
+	}
+	
+	void Start () {
 		// Setting up references.
 		ground_check = transform.Find("ground_check");
 		text = GameObject.Find("display_text").GetComponent<TextMesh>();
+		text_back = GameObject.Find("text_back").GetComponent<SpriteRenderer>();
 		my_audio = GetComponent<AudioSource>();
 		animator = GetComponent<Animator>();
 		crash_A_clip = Resources.Load("crash_A") as AudioClip;
 		crash_B_clip = Resources.Load("crash_B") as AudioClip;
 	}
 
-	
-	void Start () {
-		current_world = World.Actual;
+	void do_text(string text_cont, bool enable) {
+		text_back.enabled = enable;
+		text.text = enable ? text_cont.Replace("\\n", System.Environment.NewLine) : "";
 	}
 
 	void resume_game() {	
@@ -64,7 +70,7 @@ public class Movement : MonoBehaviour {
 		} else {
 			rigidbody2D.velocity = last_velocity;
 		}
-		text.text = "";
+		do_text("", false);
 		Time.timeScale = 1f;
 
 		suspended = crashed = false;
@@ -90,10 +96,9 @@ public class Movement : MonoBehaviour {
 		grounded = Physics2D.Linecast(transform.position, ground_check.position, 1 << LayerMask.NameToLayer("Ground"));
 		animator.SetBool("Grounded", grounded);
 
-		animator.SetBool("Switch", false);
+		animator.SetBool("Switch", System.Convert.ToBoolean(current_world));
 		if (Input.GetButtonDown("Jump") && jump_enabled) {
 			current_world = (World) System.Convert.ToInt32(!System.Convert.ToBoolean(current_world));
-			animator.SetBool("Switch", true);
 			if (grounded) {
 				rigidbody2D.AddForce(new Vector2(0f, jump_force));
 				ascending = true;
@@ -126,7 +131,7 @@ public class Movement : MonoBehaviour {
 	}
 
 	void display(string new_text) {
-		text.text = new_text.Replace("\\n", System.Environment.NewLine);
+		do_text(new_text, true);
 		last_position = transform.position;
 		display_timer = MIN_DISPLAY_TIME;
 		suspended = true;
@@ -143,7 +148,8 @@ public class Movement : MonoBehaviour {
 
 	void OnTriggerEnter2D(Collider2D other) {
 		if ((other.gameObject.tag == "GroundA" && current_world == World.Book) || (other.gameObject.tag == "GroundB" && current_world == World.Actual)) {
-			display ("crashed");
+			string text = current_world == World.Book ? "The dream has been crushed by the reality." : "You have become lost in the dream.";
+			display (text);
 			animator.SetBool("Crash", true);
 			crashed = true;
 			playCrashSound();
@@ -158,7 +164,20 @@ public class Movement : MonoBehaviour {
 			jump_enabled = true;
 		}
 		if (other.gameObject.tag == "End") {
+			current_world = World.Actual;
 			jump_enabled = false;
+		}
+	}
+
+	void OnTriggerStay2D(Collider2D other) {
+		if (suspended)
+			return;
+		if ((other.gameObject.tag == "GroundA" && current_world == World.Book) || (other.gameObject.tag == "GroundB" && current_world == World.Actual)) {
+			string text = current_world == World.Book ? "The dream has been crushed by the reality." : "You have become lost in the dream.";
+			display (text);
+			animator.SetBool("Crash", true);
+			crashed = true;
+			playCrashSound();
 		}
 	}
 
