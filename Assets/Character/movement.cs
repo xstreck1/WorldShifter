@@ -78,6 +78,7 @@ public class Movement : MonoBehaviour {
 		animator.SetBool("Respawn", false);
 	
 		grounded = Physics2D.Linecast(transform.position, ground_check.position, 1 << LayerMask.NameToLayer("Ground"));
+		animator.SetBool("Grounded", grounded);
 
 		animator.SetBool("Switch", false);
 		if (Input.GetButtonDown("Jump")) {
