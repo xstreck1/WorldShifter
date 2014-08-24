@@ -47,7 +47,9 @@ public class Movement : MonoBehaviour {
 	}
 
 	void resume_game() {
+		transform.rotation = Quaternion.identity;
 		if (crashed) {
+			current_world = World.Actual;
 			transform.position = new Vector3(respawn_x, 0, 0);
 		} else {
 			rigidbody2D.velocity = last_velocity;
@@ -56,20 +58,24 @@ public class Movement : MonoBehaviour {
 		Time.timeScale = 1f;
 
 		suspended = crashed = false;
+		animator.SetBool("Respawn", true);
+		animator.SetBool("Crash", false);
 	}
 
 	void Update () {
 		if (suspended)  {
-			if (display_timer > 0f) {
-				display_timer -= 0.01f;
-			}
 			rigidbody2D.velocity = new Vector2(0f, 0f);
 			transform.position = last_position;
+			if (display_timer > 0f) {
+				display_timer -= Time.deltaTime;
+				return;
+			}
 			if (Input.GetButton("Jump")) {
 				resume_game();
 			} 
 			return;
 		}
+		animator.SetBool("Respawn", false);
 	
 		grounded = Physics2D.Linecast(transform.position, ground_check.position, 1 << LayerMask.NameToLayer("Ground"));
 
@@ -119,6 +125,7 @@ public class Movement : MonoBehaviour {
 	void OnTriggerEnter2D(Collider2D other) {
 		if ((other.gameObject.tag == "GroundA" && current_world == World.Book) || (other.gameObject.tag == "GroundB" && current_world == World.Actual)) {
 			display ("crashed");
+			animator.SetBool("Crash", true);
 			crashed = true;
 		}
 		if (other.gameObject.tag == "Milestone") {
