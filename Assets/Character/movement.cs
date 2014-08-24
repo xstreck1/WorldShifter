@@ -46,7 +46,8 @@ public class Movement : MonoBehaviour {
 		current_world = World.Actual;
 	}
 
-	void resume_game() {
+	void resume_game() {	
+		animator.speed = 1f;
 		transform.rotation = Quaternion.identity;
 		if (crashed) {
 			current_world = World.Actual;
@@ -133,6 +134,7 @@ public class Movement : MonoBehaviour {
 			display(other.GetComponent<SignText>().caption);
 			other.GetComponent<BoxCollider2D>().enabled = false;
 			respawn_x = other.transform.position.x;
+			animator.speed = 0f;
 		}
 	}
 
