@@ -32,13 +32,22 @@ public class Movement : MonoBehaviour {
 	protected World current_world; // In which world the character currently is
 	protected float respawn_x = 0f; // Where will the player respawn
 	protected bool crashed = false;
+	protected bool jump_enabled = false; // Not allowed on the start and after the end
+
+	// Audio
+	protected AudioSource my_audio;
+	protected AudioClip crash_A_clip;
+	protected AudioClip crash_B_clip;
 
 	void Awake()
 	{
 		// Setting up references.
 		ground_check = transform.Find("ground_check");
 		text = GameObject.Find("display_text").GetComponent<TextMesh>();
+		my_audio = GetComponent<AudioSource>();
 		animator = GetComponent<Animator>();
+		crash_A_clip = Resources.Load("crash_A") as AudioClip;
+		crash_B_clip = Resources.Load("crash_B") as AudioClip;
 	}
 
 	
@@ -82,14 +91,14 @@ public class Movement : MonoBehaviour {
 		animator.SetBool("Grounded", grounded);
 
 		animator.SetBool("Switch", false);
-		if (Input.GetButtonDown("Jump")) {
+		if (Input.GetButtonDown("Jump") && jump_enabled) {
 			current_world = (World) System.Convert.ToInt32(!System.Convert.ToBoolean(current_world));
 			animator.SetBool("Switch", true);
 			if (grounded) {
 				rigidbody2D.AddForce(new Vector2(0f, jump_force));
 				ascending = true;
 			}
-		} if (ascending && Input.GetButton("Jump")) {
+		} if (ascending && Input.GetButton("Jump") && jump_enabled) {
 			jump_time += Time.deltaTime;
 			float effect = Mathf.Pow(Mathf.Max(ascend_time - jump_time, 0) * Time.deltaTime, ascend_decrease_fact); 
 			rigidbody2D.AddForce(new Vector2(0f, ascend_force * effect));
@@ -124,17 +133,32 @@ public class Movement : MonoBehaviour {
 		last_velocity = rigidbody2D.velocity;
 	}
 
+	void playCrashSound() {
+		if (current_world == World.Actual)
+			my_audio.clip = crash_A_clip;
+		else 
+			my_audio.clip = crash_B_clip;
+		my_audio.Play();
+	}
+
 	void OnTriggerEnter2D(Collider2D other) {
 		if ((other.gameObject.tag == "GroundA" && current_world == World.Book) || (other.gameObject.tag == "GroundB" && current_world == World.Actual)) {
 			display ("crashed");
 			animator.SetBool("Crash", true);
 			crashed = true;
+			playCrashSound();
 		}
 		if (other.gameObject.tag == "Milestone") {
 			display(other.GetComponent<SignText>().caption);
 			other.GetComponent<BoxCollider2D>().enabled = false;
 			respawn_x = other.transform.position.x;
 			animator.speed = 0f;
+		}
+		if (other.gameObject.tag == "Start") {
+			jump_enabled = true;
+		}
+		if (other.gameObject.tag == "End") {
+			jump_enabled = false;
 		}
 	}
 
