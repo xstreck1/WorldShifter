@@ -26,7 +26,12 @@ public class Movement : MonoBehaviour {
 	protected Animator animator;	
 
 	// Game mechanics
+	protected bool suspended = false;
+	protected Vector3 last_position; // Where the player got suspended
+	protected Vector2 last_velocity; // Which velocity the player had
 	protected World current_world; // In which world the character currently is
+	protected float respawn_x = 0f; // Where will the player respawn
+	protected bool crashed = false;
 
 	void Awake()
 	{
@@ -41,19 +46,31 @@ public class Movement : MonoBehaviour {
 		current_world = World.Actual;
 	}
 
+	void resume_game() {
+		if (crashed) {
+			transform.position = new Vector3(respawn_x, 0, 0);
+		} else {
+			rigidbody2D.velocity = last_velocity;
+		}
+		text.text = "";
+		Time.timeScale = 1f;
+
+		suspended = crashed = false;
+	}
+
 	void Update () {
-		if (display_timer > 0f) {
-			display_timer -= Time.deltaTime;
+		if (suspended)  {
+			if (display_timer > 0f) {
+				display_timer -= 0.01f;
+			}
+			rigidbody2D.velocity = new Vector2(0f, 0f);
+			transform.position = last_position;
+			if (Input.GetButton("Jump")) {
+				resume_game();
+			} 
 			return;
 		}
-		if (Time.timeScale == 0f) {
-			if (Input.GetButton("Jump")) {
-				text.text = "";
-				Time.timeScale = 1f;
-			} else {
-				return;
-			}
-		}
+	
 		grounded = Physics2D.Linecast(transform.position, ground_check.position, 1 << LayerMask.NameToLayer("Ground"));
 
 		animator.SetBool("Switch", false);
@@ -67,7 +84,6 @@ public class Movement : MonoBehaviour {
 		} if (ascending && Input.GetButton("Jump")) {
 			jump_time += Time.deltaTime;
 			float effect = Mathf.Pow(Mathf.Max(ascend_time - jump_time, 0) * Time.deltaTime, ascend_decrease_fact); 
-			Debug.Log(effect);
 			rigidbody2D.AddForce(new Vector2(0f, ascend_force * effect));
 		}
 		else if (Input.GetButtonUp("Jump")) {
@@ -94,17 +110,21 @@ public class Movement : MonoBehaviour {
 
 	void display(string new_text) {
 		text.text = new_text;
-		Time.timeScale = 0f;
+		last_position = transform.position;
 		display_timer = MIN_DISPLAY_TIME;
+		suspended = true;
+		last_velocity = rigidbody2D.velocity;
 	}
 
 	void OnTriggerEnter2D(Collider2D other) {
 		if ((other.gameObject.tag == "GroundA" && current_world == World.Book) || (other.gameObject.tag == "GroundB" && current_world == World.Actual)) {
 			display ("crashed");
-			rigidbody2D.velocity = new Vector2(0f, 0f);
+			crashed = true;
 		}
 		if (other.gameObject.tag == "Milestone") {
-			
+			display(other.GetComponent<SignText>().caption);
+			other.GetComponent<BoxCollider2D>().enabled = false;
+			respawn_x = other.transform.position.x;
 		}
 	}
 
