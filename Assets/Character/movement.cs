@@ -115,7 +115,7 @@ public class Movement : MonoBehaviour {
 	}
 
 	void display(string new_text) {
-		text.text = new_text;
+		text.text = new_text.Replace("\\n", System.Environment.NewLine);
 		last_position = transform.position;
 		display_timer = MIN_DISPLAY_TIME;
 		suspended = true;
